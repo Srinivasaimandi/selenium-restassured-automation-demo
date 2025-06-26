@@ -1,1 +1,1 @@
-# selenium-automation-demo
+# selenium-restassured-automation-demo
