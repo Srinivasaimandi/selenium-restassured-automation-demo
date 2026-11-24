@@ -2,6 +2,8 @@
 
 UI and API tests for the [Users demo app](https://github.com/srinivasaimandi/users-app-demo), written with Selenium and Java. It is a port of the Playwright framework in `copilot-playwright-framework`: the same scenarios, test data and safety rules, rebuilt on a Java stack.
 
+For the full developer guide (architecture, base classes, API validation, file reference and more), open [`docs/index.html`](docs/index.html) in a browser.
+
 ## Stack
 
 | Concern | Tool |
