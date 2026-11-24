@@ -3,6 +3,7 @@ package com.demo.ui.pages;
 import com.demo.config.Environment;
 import java.time.Duration;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -25,9 +26,19 @@ abstract class BasePage {
     driver.get(Environment.baseUrl() + path);
   }
 
-  /** Clicks an element once it is visible and enabled. */
+  /**
+   * Clicks an element once it is visible and enabled. It is scrolled to the middle of the viewport
+   * first: WebDriver does not scroll an element that is already partly visible, so a click on one
+   * at the bottom edge can land outside the viewport. The scroll is instant because Bootstrap turns
+   * on smooth scrolling, and Safari would otherwise click where the element was before it moved.
+   */
   protected void click(By locator) {
-    wait.until(ExpectedConditions.elementToBeClickable(locator)).click();
+    WebElement element = wait.until(ExpectedConditions.elementToBeClickable(locator));
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            "arguments[0].scrollIntoView({block: 'center', inline: 'nearest', behavior: 'instant'});",
+            element);
+    element.click();
   }
 
   /**

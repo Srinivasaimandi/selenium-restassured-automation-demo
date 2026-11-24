@@ -63,8 +63,8 @@ jobs:
           key: allure-history-${{ github.run_id }}
           restore-keys: allure-history-
 
-      # CI=true (set by GitHub) selects Chrome, preinstalled on the runner, and turns on two
-      # retries for failed tests.
+      # Uses the default browser, Chrome, preinstalled on the runner. CI=true (set by GitHub)
+      # turns on two retries for failed tests.
       - name: Run tests
         id: tests
         run: mvn -B -ntp test

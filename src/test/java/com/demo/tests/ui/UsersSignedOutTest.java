@@ -40,6 +40,7 @@ public class UsersSignedOutTest extends BaseUiTest {
     loginPage().goTo();
     loginPage().login(credentials.username(), credentials.password());
     expect().visible(usersPage.heading);
+    usersPage.waitUntilLoaded();
     String apiKey = usersPage.getStoredApiToken();
     assertThat(apiKey).isNotBlank();
 

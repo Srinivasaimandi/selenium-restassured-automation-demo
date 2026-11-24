@@ -212,9 +212,10 @@ public final class UsersApiMock implements AutoCloseable {
               new Header(
                   "Content-Type", new BytesValue(BytesValue.Type.STRING, response.contentType()))));
     }
-    if (response.body() != null) {
-      parameters.body(new BytesValue(BytesValue.Type.STRING, response.body()));
-    }
+    // Always send a body, even an empty one: Chrome does not answer a request whose provided
+    // response has none.
+    parameters.body(
+        new BytesValue(BytesValue.Type.STRING, response.body() == null ? "" : response.body()));
     network.provideResponse(parameters);
   }
 

@@ -52,6 +52,17 @@ public class UsersPage extends BasePage {
     open("/usersPage.html");
   }
 
+  /**
+   * Waits until the page has finished loading, so its scripts have attached their event handlers.
+   * Needed after the login form's redirect: Selenium waits only for navigations it starts itself.
+   */
+  public void waitUntilLoaded() {
+    new WebDriverWait(driver, Duration.ofSeconds(10))
+        .until(d ->
+            "complete"
+                .equals(((JavascriptExecutor) d).executeScript("return document.readyState")));
+  }
+
   /** Locates a message in the page's status banner. */
   public static By statusMessage(String message) {
     return By.xpath("//div[@id='error-msg' and normalize-space()=" + XPath.literal(message) + "]");

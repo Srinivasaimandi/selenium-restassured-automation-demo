@@ -22,6 +22,8 @@ import io.qameta.allure.Story;
 import java.util.List;
 import java.util.Map;
 import org.openqa.selenium.By;
+import org.openqa.selenium.bidi.browsingcontext.BrowsingContext;
+import org.openqa.selenium.bidi.browsingcontext.ReadinessState;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -58,7 +60,9 @@ public class MockedUsersTest extends BaseUiTest {
     UsersPage usersPage = usersPage();
     HeldRequest usersRequest = usersApiMock().hold(Endpoint.LIST, "GET");
 
-    driver().navigate().refresh();
+    // Reload through BiDi without waiting: ChromeDriver's classic refresh never returns while the
+    // mock holds one of the page's requests.
+    new BrowsingContext(driver(), driver().getWindowHandle()).reload(ReadinessState.NONE);
     usersRequest.received();
     expect().visible(usersPage.heading);
     expect().count(usersPage.userRows, 0);

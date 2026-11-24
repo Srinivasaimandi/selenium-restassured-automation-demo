@@ -19,8 +19,7 @@ import org.testng.SkipException;
  * chromedriver), so no driver setup is needed.
  *
  * <ul>
- *   <li>{@code -Dbrowser=safari} (default for local runs on macOS), {@code chrome} (default in CI
- *       and elsewhere) or {@code firefox}
+ *   <li>{@code -Dbrowser=chrome} (default), {@code firefox} or {@code safari}
  *   <li>{@code -Dheadless=false} to watch the browser (Safari is never headless)
  * </ul>
  */
@@ -33,14 +32,9 @@ public final class DriverFactory {
 
   private DriverFactory() {}
 
-  /**
-   * The browser this run uses: {@code -Dbrowser} when set; otherwise Safari for local runs on
-   * macOS, and Chrome in CI and everywhere else.
-   */
+  /** The browser this run uses: {@code -Dbrowser} when set, otherwise Chrome. */
   public static String browserName() {
-    boolean macOs = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("mac");
-    String fallback = macOs && !Environment.isCi() ? "safari" : "chrome";
-    return System.getProperty("browser", fallback).trim().toLowerCase(Locale.ROOT);
+    return System.getProperty("browser", "chrome").trim().toLowerCase(Locale.ROOT);
   }
 
   public static WebDriver create() {

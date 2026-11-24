@@ -49,7 +49,9 @@ public final class BrowserDiagnostics implements AutoCloseable {
     network.onResponseCompleted(event -> {
       String url = event.getRequest().getUrl();
       int status = event.getResponseData().getStatus();
-      if (isRelevant(url) && status >= 400) {
+      // Browsers fetch /favicon.ico on their own; the app has none, and Playwright does not
+      // report that request either.
+      if (isRelevant(url) && status >= 400 && !URI.create(url).getPath().equals("/favicon.ico")) {
         errors.add("HTTP %d: %s %s".formatted(status, event.getRequest().getMethod(), url));
       }
     });

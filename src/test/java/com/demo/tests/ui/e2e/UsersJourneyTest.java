@@ -30,6 +30,7 @@ public class UsersJourneyTest extends BaseUiTest {
     loginPage().login(credentials.username(), credentials.password());
     expect().urlMatches(USERS_PAGE_URL);
     expect().visible(usersPage.heading);
+    usersPage.waitUntilLoaded();
 
     usersPage.searchFor(TestData.JANE.email());
     expect().visible(usersPage.userRow(TestData.JANE.name()).locator());
@@ -54,6 +55,7 @@ public class UsersJourneyTest extends BaseUiTest {
       loginPage().login(credentials.username(), credentials.password());
       expect().urlMatches(USERS_PAGE_URL);
       expect().visible(usersPage.heading);
+      usersPage.waitUntilLoaded();
 
       usersPage.openAddUserDialog();
       usersPage.fillAddUserForm(newUser);

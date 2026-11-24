@@ -20,8 +20,9 @@ UI and API tests for the [Users demo app](https://github.com/srinivasaimandi/use
 - Maven 3.9 or newer
 - Node.js 22, which runs the app under test
 - A browser:
-  - **Safari** is the default for local runs on macOS. Enable automation once: run `safaridriver --enable`, then in Safari turn on **Develop › Allow Remote Automation**.
-  - **Chrome** is the default in CI (when `CI` is set) and on other systems. **Firefox** is also supported. Selenium Manager downloads chromedriver or geckodriver on first use, so the first run is slower.
+  - **Chrome** is the default, locally and in CI. Selenium Manager downloads a matching chromedriver on first use, so the first run is slower. Don't keep an old `chromedriver` on your `PATH`: Selenium uses it instead of downloading one, and a version that doesn't match your Chrome fails with `DevToolsActivePort file doesn't exist`.
+  - **Firefox** (`-Dbrowser=firefox`) is also fully supported.
+  - **Safari** (`-Dbrowser=safari`) works with limits; see [Browser support](#browser-support). Enable automation once: run `safaridriver --enable`, then in Safari turn on **Develop › Allow Remote Automation**.
 
 ## Setup
 
@@ -44,7 +45,7 @@ git submodule update --remote --init app
 | Everything, local app | `mvn test` |
 | Only some groups | `mvn test -Dinclude.groups=smoke` |
 | Leave groups out | `mvn test -Dexclude.groups=test-data` |
-| Pick a browser | `mvn test -Dbrowser=chrome` (`safari`, `chrome` or `firefox`) |
+| Pick a browser | `mvn test -Dbrowser=firefox` (`chrome` is the default; `firefox` or `safari`) |
 | Watch the browser | `mvn test -Dheadless=false` (Safari is never headless) |
 | Another environment | `TEST_ENV=dev mvn test -Dexclude.groups=test-data` |
 | Retry failures | `mvn test -Dretries=2` (CI retries twice by default) |
@@ -85,14 +86,14 @@ Failed UI tests attach a screenshot and the page source. API calls are attached 
 
 Network mocks (`UsersApiMock`) and the smoke test's console and network checks (`BrowserDiagnostics`) use WebDriver BiDi. Safari doesn't support BiDi yet.
 
-| | Safari (local default) | Chrome (CI default) | Firefox |
+| | Chrome (default) | Firefox | Safari |
 | --- | --- | --- | --- |
 | Most UI and all API tests | ✅ | ✅ | ✅ |
-| Mocked tests (`mocked` group) and smoke diagnostics | skipped | ✅ | ✅ |
-| Parallel UI tests | no (one session at a time) | ✅ | ✅ |
-| Headless | no | ✅ | ✅ |
+| Mocked tests (`mocked` group) and smoke diagnostics | ✅ | ✅ | skipped |
+| Parallel UI tests | ✅ | ✅ | no (one session at a time) |
+| Headless | ✅ | ✅ | no |
 
-On Safari, those tests are reported as skipped with the reason, and the UI section switches to one test at a time automatically. CI runs them in Chrome. To run them locally, use `-Dbrowser=chrome` or `-Dbrowser=firefox`.
+On Safari, those tests are reported as skipped with the reason, and the UI section switches to one test at a time automatically.
 
 ## Project layout
 
