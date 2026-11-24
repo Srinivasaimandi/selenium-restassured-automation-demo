@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "The GraphQL response envelope returned for every operation.",
+  "type": "object",
+  "properties": {
+    "data": { "type": ["object", "null"] },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string", "minLength": 1 },
+          "extensions": {
+            "type": "object",
+            "properties": { "code": { "type": "string", "minLength": 1 } }
+          }
+        },
+        "required": ["message"]
+      }
+    }
+  }
+}

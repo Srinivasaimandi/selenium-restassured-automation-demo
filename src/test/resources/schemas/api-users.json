@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "A list of users. Items repeat api-user.json, which has no shared definitions file.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": { "type": "integer", "minimum": 0 },
+      "name": { "type": "string", "minLength": 1 },
+      "email": { "type": "string", "format": "email" },
+      "username": { "type": "string", "minLength": 1 }
+    },
+    "required": ["id", "name", "email", "username"]
+  }
+}

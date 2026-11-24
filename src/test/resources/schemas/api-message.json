@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "A confirmation message, such as the data-reset response.",
+  "type": "object",
+  "properties": {
+    "message": { "type": "string", "minLength": 1 }
+  },
+  "required": ["message"]
+}

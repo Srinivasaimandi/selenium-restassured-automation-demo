@@ -1,0 +1,15 @@
+# Build output and reports
+target/
+allure-report/
+.allure/
+
+# Local environment files with credentials; only the *.example templates are committed
+env/.env
+env/.env.*
+!env/.env*.example
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store

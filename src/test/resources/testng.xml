@@ -1,0 +1,41 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<!--
+  Sections run one after another, in this order; tests inside a section run in parallel.
+  This mirrors the Playwright projects: setup -> api + ui -> api-destructive.
+-->
+<suite name="Users App" verbose="1">
+  <listeners>
+    <listener class-name="com.demo.support.SuiteLifecycle"/>
+    <listener class-name="com.demo.support.KnownDefectListener"/>
+    <listener class-name="com.demo.support.RetryFailedTests"/>
+    <listener class-name="com.demo.support.GroupFilter"/>
+  </listeners>
+
+  <!-- Logs in through the UI once and saves the session for the UI tests. -->
+  <test name="setup">
+    <classes>
+      <class name="com.demo.tests.setup.AuthSetupTest"/>
+    </classes>
+  </test>
+
+  <!-- Tests in one API class run in order; classes run in parallel. -->
+  <test name="api" parallel="classes" thread-count="4">
+    <packages>
+      <package name="com.demo.tests.api"/>
+    </packages>
+  </test>
+
+  <test name="ui" parallel="methods" thread-count="4">
+    <packages>
+      <package name="com.demo.tests.ui"/>
+      <package name="com.demo.tests.ui.e2e"/>
+    </packages>
+  </test>
+
+  <!-- Wipes data other tests depend on, so it runs last and skips if anything failed. -->
+  <test name="api-destructive">
+    <packages>
+      <package name="com.demo.tests.api.destructive"/>
+    </packages>
+  </test>
+</suite>

@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "User fields the tests read; other fields are allowed and ignored.",
+  "type": "object",
+  "properties": {
+    "id": { "type": "integer", "minimum": 0 },
+    "name": { "type": "string", "minLength": 1 },
+    "email": { "type": "string", "format": "email" },
+    "username": { "type": "string", "minLength": 1 }
+  },
+  "required": ["id", "name", "email", "username"]
+}

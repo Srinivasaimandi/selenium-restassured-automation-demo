@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "The count returned by GET /api/users/count.",
+  "type": "object",
+  "properties": {
+    "count": { "type": "integer", "minimum": 0 }
+  },
+  "required": ["count"]
+}
