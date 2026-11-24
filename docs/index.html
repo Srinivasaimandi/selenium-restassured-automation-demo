@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Architecture, setup, base classes, and file reference for the Selenium + TestNG + REST Assured test framework.">
+    <title>Selenium Automation Demo | Developer Guide</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #1c2733;
+        --muted: #526170;
+        --line: #d7e0e8;
+        --panel: #f3f7fa;
+        --accent: #145da0;
+        --accent-soft: #e6f1fb;
+        --warning: #fff6df;
+      }
+
+      * { box-sizing: border-box; }
+
+      html { scroll-behavior: smooth; }
+
+      body {
+        margin: 0;
+        background: #fff;
+        color: var(--ink);
+        font: 16px/1.65 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      a { color: var(--accent); }
+      a:hover { text-decoration-thickness: 2px; }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        min-height: 100vh;
+        max-width: 1440px;
+        margin: 0 auto;
+      }
+
+      aside {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+        border-right: 1px solid var(--line);
+        padding: 28px 20px;
+        background: #fbfdff;
+      }
+
+      aside .brand {
+        margin: 0 0 16px;
+        font-size: 1rem;
+        font-weight: 700;
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity .2s, visibility .2s;
+      }
+      aside .brand.show-app { visibility: visible; opacity: 1; }
+      aside .brand span { display: block; font-weight: 400; color: var(--muted); font-size: .85rem; }
+
+      aside nav { display: grid; gap: 4px; }
+      aside nav a {
+        padding: 6px 9px;
+        border-radius: 6px;
+        color: var(--muted);
+        text-decoration: none;
+      }
+      aside nav a:hover { background: var(--accent-soft); color: var(--accent); }
+
+      main {
+        width: min(100%, 1050px);
+        padding: 42px clamp(22px, 5vw, 72px) 80px;
+      }
+
+      header {
+        margin-bottom: 36px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .eyebrow {
+        color: var(--accent);
+        font-size: .78rem;
+        font-weight: 750;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+      }
+
+      h1 { margin: 8px 0; font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.15; }
+      h2 { margin-top: 48px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+      h3 { margin-top: 28px; }
+      p, li { max-width: 82ch; }
+      .lead { color: var(--muted); font-size: 1.15rem; }
+
+      .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+      .badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel);
+        color: var(--muted);
+        font-size: .82rem;
+      }
+
+      .card, .notice {
+        margin: 18px 0;
+        padding: 16px 18px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--panel);
+      }
+
+      .notice { border-color: #ebd693; background: var(--warning); }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+      .grid .card { margin: 0; }
+      .grid .card h3 { margin-top: 0; }
+
+      code, kbd {
+        border-radius: 4px;
+        background: #eef2f5;
+        padding: 2px 5px;
+        font: .9em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+
+      pre {
+        overflow-x: auto;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #f7f9fb;
+      }
+      pre code { padding: 0; background: transparent; }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 18px 0;
+        font-size: .94rem;
+      }
+      th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+      th { background: var(--panel); }
+      td:first-child { min-width: 250px; }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+        gap: 10px;
+        padding: 0;
+        list-style: none;
+        counter-reset: flow;
+      }
+      .flow li {
+        position: relative;
+        min-height: 88px;
+        padding: 14px 14px 14px 46px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        counter-increment: flow;
+      }
+      .flow li::before {
+        position: absolute;
+        top: 14px;
+        left: 13px;
+        display: grid;
+        width: 24px;
+        height: 24px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--accent-soft);
+        color: var(--accent);
+        content: counter(flow);
+        font-weight: 700;
+      }
+
+      footer { margin-top: 54px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); }
+
+      @media (max-width: 800px) {
+        .layout { display: block; }
+        aside { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+        aside nav { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+        main { padding-top: 28px; }
+        td:first-child { min-width: 0; }
+      }
+
+      @media print {
+        aside { display: none; }
+        .layout { display: block; }
+        main { width: 100%; padding: 0; }
+        a { color: inherit; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <aside aria-label="Documentation navigation">
+        <div class="brand">Selenium Automation Demo<span>Developer guide</span></div>
+        <nav>
+          <a href="#overview">Overview</a>
+          <a href="#quick-start">Quick start</a>
+          <a href="#execution">How a run works</a>
+          <a href="#sections">Suite sections &amp; groups</a>
+          <a href="#base-classes">Base classes</a>
+          <a href="#api-validation">API validation</a>
+          <a href="#test-data">Test data &amp; safety</a>
+          <a href="#commands">Commands</a>
+          <a href="#browsers">Browser support</a>
+          <a href="#reports">Reports</a>
+          <a href="#file-reference">File reference</a>
+          <a href="#adding-tests">Adding tests</a>
+          <a href="#ci">CI</a>
+        </nav>
+      </aside>
+
+      <main>
+        <header>
+          <div class="eyebrow">Project documentation</div>
+          <h1 id="page-title">Selenium Automation Demo</h1>
+          <p class="lead">
+            A practical guide to how this Java framework configures environments, starts the app under test, runs
+            browser and API tests, manages test data, validates API responses, and organizes its source files. It is
+            a port of the Playwright framework in <code>copilot-playwright-framework</code>: the same scenarios, test
+            data, and safety rules, rebuilt on a Java stack.
+          </p>
+          <div class="badges" aria-label="Framework capabilities">
+            <span class="badge">Selenium 4 + WebDriver BiDi</span>
+            <span class="badge">Java 21</span>
+            <span class="badge">TestNG 7</span>
+            <span class="badge">REST Assured</span>
+            <span class="badge">REST · GraphQL · OpenAPI</span>
+            <span class="badge">JSON Schema validation</span>
+            <span class="badge">axe-core accessibility</span>
+            <span class="badge">Allure reports</span>
+          </div>
+        </header>
+
+        <section id="overview">
+          <h2>Overview</h2>
+          <p>
+            The framework tests the <a href="https://github.com/srinivasaimandi/users-app-demo">Users App</a> at the
+            <code>BASE_URL</code> selected for a run. Browser tests cover the home page, login flow, users screen,
+            accessibility, network-failure states, and complete user journeys. API tests cover the REST endpoints, the
+            GraphQL API, and the published OpenAPI document, and validate every response body against a JSON Schema.
+          </p>
+          <div class="grid">
+            <article class="card">
+              <h3>UI tests</h3>
+              <p>Located in <code>com.demo.tests.ui</code> and <code>tests.ui.e2e</code>; run in Chrome by default, with Firefox and Safari supported. Includes axe scans and BiDi network mocks for API failures, slow responses, and row actions.</p>
+            </article>
+            <article class="card">
+              <h3>API tests</h3>
+              <p>Located in <code>com.demo.tests.api</code>; REST Assured, no browser. Covers REST, GraphQL, and the published OpenAPI contract. The data reset in <code>tests.api.destructive</code> runs last, in its own suite section.</p>
+            </article>
+            <article class="card">
+              <h3>Shared code</h3>
+              <p>Page objects, base test classes, TestNG listeners, test data, API clients, JSON Schemas, and environment checks are kept in focused packages.</p>
+            </article>
+          </div>
+          <p>
+            The Users App is included in <code>app/</code> as a Git submodule. For loopback targets under
+            <code>TEST_ENV=local</code> or <code>TEST_ENV=test</code>, the suite starts it with
+            <code>npm --prefix app start</code> (running <code>npm ci --prefix app</code> first if
+            <code>app/node_modules</code> is missing), waits up to 120&nbsp;s for <code>BASE_URL</code> to respond, and
+            stops it when the suite ends. Remote test, development, and staging targets must already be reachable.
+          </p>
+          <div class="notice">
+            <strong>The app is not updated automatically on local runs.</strong> The suite tests whatever commit
+            <code>app/</code> is checked out at, and reuses an app that is already responding at <code>BASE_URL</code>.
+            To test the latest app code, run <code>git submodule update --remote --init app</code> first. CI does this
+            on every run. Fix app defects upstream in users-app-demo, not in <code>app/</code>.
+          </div>
+        </section>
+
+        <section id="quick-start">
+          <h2>Quick start</h2>
+          <ol>
+            <li>Install JDK 21+, Maven 3.9+, Node.js 22 (runs the app under test), and Chrome.</li>
+            <li>Clone with submodules so <code>app/</code> is checked out.</li>
+            <li>Copy an environment example and set the login credentials.</li>
+            <li>Run <code>mvn test</code>; the suite starts the bundled app for loopback targets.</li>
+          </ol>
+          <pre><code>git clone --recurse-submodules &lt;this repo&gt;
+cd selenium-automation-demo
+cp env/.env.example env/.env.local   # then fill in LOGIN_USERNAME and LOGIN_PASSWORD
+mvn test</code></pre>
+          <p>
+            Selenium Manager downloads a matching chromedriver on first use, so the first run is slower. Don't keep an
+            old <code>chromedriver</code> on your <code>PATH</code>: Selenium uses it instead of downloading one, and a
+            version that doesn't match your Chrome fails with <code>DevToolsActivePort file doesn't exist</code>.
+          </p>
+          <p>
+            For API tests that create or delete users, use a loopback URL with <code>TEST_ENV=local</code> or a dedicated,
+            disposable <code>TEST_ENV=test</code> target with an explicit hostname allowlist.
+          </p>
+        </section>
+
+        <section id="execution">
+          <h2>How a test run works</h2>
+          <ol class="flow">
+            <li><strong>Alter suite.</strong><br><code>BrowserParallelism</code> runs the <code>ui</code> section one test at a time when the browser allows only one session (Safari).</li>
+            <li><strong>Select environment.</strong><br><code>TEST_ENV</code> chooses the matching <code>env/.env.*</code> file; an unknown value fails fast.</li>
+            <li><strong>Resolve URL.</strong><br><code>BASE_URL</code> is required except for the local default <code>http://127.0.0.1:9899</code>.</li>
+            <li><strong>Start local app.</strong><br><code>SuiteLifecycle</code> starts <code>app/</code> for loopback targets, or reuses a responding server. Its log goes to <code>target/app-server.log</code>.</li>
+            <li><strong>Authenticate once.</strong><br>The <code>setup</code> section logs in through the UI and saves the <code>x-api-token</code> for the UI tests.</li>
+            <li><strong>Run sections.</strong><br><code>api</code> and <code>ui</code> run in parallel threads; <code>api-destructive</code> runs last and skips after any failure.</li>
+            <li><strong>Per-test resources.</strong><br>Each UI test gets a fresh browser; each test gets its own logged-in API clients on first use.</li>
+            <li><strong>Capture diagnostics.</strong><br>Failed UI tests attach a screenshot and the page source; API calls are attached as request/response pairs.</li>
+            <li><strong>Stop app.</strong><br>The app the suite started is stopped, including npm's child <code>node</code> process.</li>
+          </ol>
+          <p>
+            <a href="../src/test/resources/testng.xml"><code>testng.xml</code></a> defines the sections and listeners;
+            <a href="../pom.xml"><code>pom.xml</code></a> configures Surefire, Allure, AspectJ (for Allure
+            <code>@Step</code>), and Spotless. In CI, failed tests are retried twice; locally there are no retries unless
+            <code>-Dretries=N</code> is set.
+          </p>
+          <h3>Browser and reporter settings</h3>
+          <table>
+            <thead><tr><th>Setting</th><th>Value</th></tr></thead>
+            <tbody>
+              <tr><td>Parallelism</td><td><code>api</code>: <code>parallel="classes"</code>, 4 threads, so tests within one API class run in order against the app's shared data. <code>ui</code>: <code>parallel="methods"</code>, 4 threads (1 on Safari).</td></tr>
+              <tr><td>Browser</td><td><code>-Dbrowser=chrome</code> (default), <code>firefox</code>, or <code>safari</code>.</td></tr>
+              <tr><td>Headless</td><td>On by default; <code>-Dheadless=false</code> to watch. Safari is never headless.</td></tr>
+              <tr><td>Viewport</td><td>1280&times;720 (Playwright's Desktop Chrome size); page-load timeout 30&nbsp;s.</td></tr>
+              <tr><td>Waits</td><td><code>Expect</code> assertions and page-object actions wait up to 5&nbsp;s, polling every 100&nbsp;ms.</td></tr>
+              <tr><td>Retries</td><td><code>RetryFailedTests</code>: 2 when <code>CI</code> is set, otherwise 0; override with <code>-Dretries=N</code>. <code>@KnownDefect</code> tests are never retried.</td></tr>
+              <tr><td>Failure evidence</td><td>Screenshot and page source attached to Allure for failed UI tests.</td></tr>
+              <tr><td>Reports</td><td>Allure results in <code>target/allure-results</code>; Surefire/TestNG results in <code>target/surefire-reports</code>.</td></tr>
+              <tr><td>Local app</td><td><code>npm --prefix app start</code>, 120&nbsp;s start-up timeout, existing server reused.</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="sections">
+          <h2>Suite sections and groups</h2>
+          <p>
+            TestNG runs the four <code>&lt;test&gt;</code> sections of <code>testng.xml</code> one after another, in
+            this order. They play the role of Playwright projects.
+          </p>
+          <table>
+            <thead><tr><th>Section</th><th>Runs</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><code>setup</code></td><td><code>tests.setup.AuthSetupTest</code></td><td>Logs in through the login form and saves the <code>x-api-token</code> local-storage value with <code>AuthState</code>. Skips without <code>LOGIN_USERNAME</code> and <code>LOGIN_PASSWORD</code>.</td></tr>
+              <tr><td><code>api</code></td><td><code>com.demo.tests.api</code></td><td>REST, GraphQL, and OpenAPI contract tests (no browser). Classes run in parallel; methods in a class run in order.</td></tr>
+              <tr><td><code>ui</code></td><td><code>com.demo.tests.ui</code>, <code>com.demo.tests.ui.e2e</code></td><td>One fresh browser per test, methods in parallel.</td></tr>
+              <tr><td><code>api-destructive</code></td><td><code>com.demo.tests.api.destructive</code></td><td>The data reset. Runs last and is skipped if any earlier test failed (<code>SuiteLifecycle.failureCount()</code>).</td></tr>
+            </tbody>
+          </table>
+          <h3>Groups</h3>
+          <p>Every test is in TestNG <code>groups</code>, the equivalent of Playwright tags.</p>
+          <table>
+            <thead><tr><th>Group</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td><code>setup</code></td><td>The login setup test. Always runs, even when filtered out, because UI tests depend on it.</td></tr>
+              <tr><td><code>smoke</code></td><td>Fast critical-path checks.</td></tr>
+              <tr><td><code>login</code>, <code>users</code></td><td>Feature suites for the login form and the users screen.</td></tr>
+              <tr><td><code>validation</code></td><td>Input validation rules.</td></tr>
+              <tr><td><code>auth</code></td><td>Tests of a real login with credentials.</td></tr>
+              <tr><td><code>e2e</code></td><td>Multi-screen user journeys in <code>tests/ui/e2e/</code>.</td></tr>
+              <tr><td><code>a11y</code></td><td>axe-core WCAG 2.1 A/AA scans.</td></tr>
+              <tr><td><code>mocked</code></td><td>UI tests that mock the users API with <code>UsersApiMock</code>.</td></tr>
+              <tr><td><code>api</code>, <code>graphql</code>, <code>contract</code></td><td>REST, GraphQL, and OpenAPI contract suites.</td></tr>
+              <tr><td><code>test-data</code></td><td>Creates, edits, or deletes real data. Leave out on shared environments.</td></tr>
+              <tr><td><code>destructive</code></td><td>The data reset, which deletes users other tests rely on.</td></tr>
+              <tr><td><code>known-defect</code></td><td>Tests of correct behaviour the app does not implement yet (<code>@KnownDefect</code>).</td></tr>
+            </tbody>
+          </table>
+          <p>
+            Filter with <code>-Dinclude.groups=a11y,smoke</code> (run tests in any of these groups) or
+            <code>-Dexclude.groups=test-data</code> (drop tests in any of them). Surefire ignores its own
+            <code>groups</code> settings when a suite XML is used, so <code>GroupFilter</code> does the filtering.
+          </p>
+        </section>
+
+        <section id="base-classes">
+          <h2>Base classes and lifecycles</h2>
+          <p>
+            Playwright fixtures become methods on two abstract base classes. Resources are held in
+            <code>ThreadLocal</code>s, because TestNG runs methods of one instance in parallel.
+          </p>
+          <h3>API resources (<code>BaseTest</code>)</h3>
+          <ul>
+            <li><code>usersApi()</code> logs in with <code>POST /api/login</code> on first use and returns a <code>UsersApiClient</code> with its own API key.</li>
+            <li><code>graphqlApi()</code> authenticates the same way and sends queries and mutations to <code>/graphql</code>.</li>
+            <li><code>createApiTestUser()</code> checks the target is safe to change, creates a uniquely named user, and returns an <code>ApiTestUser</code> that deletes it on <code>close()</code>.</li>
+            <li><code>TestData</code> provides shared, read-only reference values as constants.</li>
+          </ul>
+          <p>
+            Defined in <a href="../src/test/java/com/demo/support/BaseTest.java"><code>BaseTest.java</code></a>.
+            Clients are lazy: nothing logs in unless a test asks for a client, and each test gets its own key, so a
+            test can log out without affecting others. Clients are released after every method.
+          </p>
+
+          <h3>UI resources (<code>BaseUiTest</code>)</h3>
+          <ul>
+            <li>A new browser session is created before every test method and quit after it.</li>
+            <li><code>loginPage()</code> and <code>usersPage()</code> return page objects bound to the test's driver.</li>
+            <li><code>expect()</code> returns waiting assertions: <code>visible</code>, <code>hidden</code>, <code>count</code>, <code>texts</code>, <code>text</code>, <code>value</code>, <code>enabled</code>, <code>focused</code>, <code>attribute</code>, <code>urlMatches</code>, <code>title</code>, and a generic <code>poll</code>.</li>
+            <li><code>openAuthenticatedUsersPage()</code> writes the shared token into <code>localStorage</code> and opens the users screen signed in. Tests start signed out otherwise.</li>
+            <li><code>usersApiMock()</code> mocks users-API endpoints with WebDriver BiDi request interception: canned responses, network failures, and requests held back to test slow responses.</li>
+            <li><code>axe()</code> returns an axe-core <code>AxeBuilder</code> preconfigured with the WCAG 2.1 A/AA tags (<code>wcag2a</code>, <code>wcag2aa</code>, <code>wcag21a</code>, <code>wcag21aa</code>).</li>
+          </ul>
+          <p>
+            <a href="../src/test/java/com/demo/support/BaseUiTest.java"><code>BaseUiTest</code></a> extends
+            <code>BaseTest</code>, so UI tests can also use the API clients. When the setup test did not run (for
+            example, a single class run on its own), <code>AuthState</code> logs in through the API once instead.
+            Authenticated tests are skipped when credentials are not configured.
+          </p>
+
+          <h3>TestNG listeners</h3>
+          <table>
+            <thead><tr><th>Listener</th><th>Role</th></tr></thead>
+            <tbody>
+              <tr><td><code>SuiteLifecycle</code></td><td>Prints the run's environment, starts and stops the local app, and counts failures for the destructive section.</td></tr>
+              <tr><td><code>KnownDefectListener</code></td><td>Inverts results of <code>@KnownDefect</code> tests: a failure is reported as a pass, a pass as a failure.</td></tr>
+              <tr><td><code>RetryFailedTests</code></td><td>Adds a retry analyzer to every test except known-defect ones.</td></tr>
+              <tr><td><code>GroupFilter</code></td><td>Applies <code>include.groups</code> / <code>exclude.groups</code>, always keeping <code>setup</code>.</td></tr>
+              <tr><td><code>BrowserParallelism</code></td><td>Loaded through <code>META-INF/services</code> so it can change the suite before it runs; turns off UI parallelism on Safari.</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="api-validation">
+          <h2>API client and response validation</h2>
+          <p>
+            <a href="../src/test/java/com/demo/api/UsersApiClient.java"><code>UsersApiClient</code></a> centralizes
+            authenticated requests for login, logout, list, search, count, create, bulk create, retrieve, update, delete,
+            and data reset. Its successful JSON responses pass through
+            <a href="../src/test/java/com/demo/api/ApiResponses.java"><code>ApiResponses.parse</code></a>, which checks
+            the status, validates the body against a schema, and maps it to a record. Most operations also have a
+            <code>…Response</code> variant that returns the raw REST Assured response for negative tests.
+          </p>
+          <p>
+            Runtime contracts are JSON Schema files in
+            <a href="../src/test/resources/schemas/"><code>src/test/resources/schemas/</code></a> (named in
+            <a href="../src/test/java/com/demo/api/Schemas.java"><code>Schemas</code></a>): API key, error, message,
+            individual user, user list, user count, and the GraphQL response envelope. A response with an unexpected
+            status, invalid JSON, or an invalid shape fails with the body in the message. The shared Jackson mapper
+            ignores unmodeled fields, so <code>ApiUser</code> never reads the password.
+          </p>
+          <p>
+            <a href="../src/test/java/com/demo/api/ApiSpecs.java"><code>ApiSpecs</code></a> builds every request: base
+            URI, JSON content type, the <code>x-api-key</code> header, and the <code>AllureRestAssured</code> filter
+            that attaches each call to the report.
+          </p>
+          <p>
+            <a href="../src/test/java/com/demo/api/GraphqlClient.java"><code>GraphqlClient</code></a> holds a document
+            for every query and mutation in the app's GraphQL schema; <code>UsersGraphqlTest</code> covers them,
+            including cross-checks against the REST API and the unauthenticated error.
+          </p>
+          <p>
+            <a href="../src/test/java/com/demo/tests/api/OpenApiContractTest.java"><code>OpenApiContractTest</code></a>
+            reads the OpenAPI document that Swagger UI embeds in <code>/api-docs/swagger-ui-init.js</code>
+            (<a href="../src/test/java/com/demo/api/OpenApiDocument.java"><code>OpenApiDocument</code></a>). It checks
+            that the documented operations exactly match <code>UsersApiClient.OPERATIONS</code>, that login needs no API
+            key, that the API-key header matches, and that every documented JSON response schema agrees with the test's
+            schema file.
+          </p>
+          <p>
+            Tests for behaviour the app does not implement yet are annotated <code>@KnownDefect("…")</code> and put in
+            the <code>known-defect</code> group. They are reported as passing while they fail, and fail once the app
+            is fixed, as a reminder to remove the annotation. Current defects: the OpenAPI document omits
+            <code>204</code> for <code>GET /users</code> and <code>GET /users/search</code> and <code>403</code> for
+            <code>DELETE /users/{id}</code>; and the protected-user lock icon puts <code>aria-label</code> on a
+            role-less <code>&lt;span&gt;</code> (axe <code>aria-prohibited-attr</code>).
+          </p>
+          <div class="notice">
+            <strong>Data reset:</strong> <code>PUT /users/reset-data</code> deletes every user added since startup,
+            including users other tests are using. Only <code>ResetDataTest</code> in
+            <code>tests/api/destructive/</code> calls it, in the <code>api-destructive</code> section, which runs after
+            every other section and is skipped if any earlier test failed. UI tests always mock the reset.
+          </div>
+        </section>
+
+        <section id="test-data">
+          <h2>Test data and safety rules</h2>
+          <ul>
+            <li><a href="../src/test/java/com/demo/data/TestData.java"><code>TestData</code></a> holds the seeded user Jane, the delete-protected user ID, a missing ID, search terms, and mock users.</li>
+            <li><a href="../src/test/java/com/demo/data/NewUser.java"><code>NewUser.unique()</code></a> generates collision-resistant users (UUID-based name, email, and username) for CRUD tests.</li>
+            <li><code>TestData.MockUsers</code> have IDs far above the seeded ones (901, 902), so a request that escapes its mock changes no real record.</li>
+            <li><a href="../src/test/java/com/demo/config/Environment.java"><code>Environment</code></a> reads settings and credentials and guards mutation targets.</li>
+            <li>The <code>test-data</code> group marks tests that create or delete application records.</li>
+          </ul>
+          <p>
+            <code>createApiTestUser()</code> and <code>ResetDataTest</code> call
+            <code>Environment.assertTestDataTargetIsSafe()</code>, which allows only loopback hosts under
+            <code>TEST_ENV=local</code>, or hostnames listed in <code>TEST_DATA_ALLOWED_HOSTS</code> under
+            <code>TEST_ENV=test</code>. Anywhere else they fail before sending a request. Leave them out of shared
+            environments with <code>-Dexclude.groups=test-data</code>. Do not configure a production host as a
+            test-data target.
+          </p>
+          <h3>Settings</h3>
+          <p>
+            Each setting is read from, in order of precedence: a <code>-D</code> system property, a process environment
+            variable, then <code>env/.env.&lt;TEST_ENV&gt;</code> (falling back to <code>env/.env</code> for
+            <code>local</code>).
+          </p>
+          <table>
+            <thead>
+              <tr><th>Setting</th><th>Purpose</th><th>Required when</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>TEST_ENV</code></td><td>Selects <code>local</code>, <code>test</code>, <code>dev</code>, or <code>staging</code>.</td><td>Optional; defaults to <code>local</code>.</td></tr>
+              <tr><td><code>BASE_URL</code></td><td>Base URL for browser navigation and API requests.</td><td>Required outside the local fallback.</td></tr>
+              <tr><td><code>LOGIN_USERNAME</code>, <code>LOGIN_PASSWORD</code></td><td>Credentials used by UI and API authentication.</td><td>Authenticated tests; otherwise those tests skip.</td></tr>
+              <tr><td><code>TEST_DATA_ALLOWED_HOSTS</code></td><td>Comma-separated exact hostnames permitted for data mutations.</td><td>When running mutating tests with <code>TEST_ENV=test</code>.</td></tr>
+              <tr><td><code>CI</code></td><td>Turns on two retries and Chrome's <code>--no-sandbox</code> and <code>--disable-dev-shm-usage</code>.</td><td>Set automatically by GitHub Actions.</td></tr>
+              <tr><td><code>-Dbrowser</code></td><td><code>chrome</code>, <code>firefox</code>, or <code>safari</code>.</td><td>Optional; defaults to <code>chrome</code>.</td></tr>
+              <tr><td><code>-Dheadless</code></td><td><code>false</code> shows the browser window.</td><td>Optional; defaults to <code>true</code>.</td></tr>
+              <tr><td><code>-Dretries</code></td><td>How many times to retry a failed test.</td><td>Optional; 2 in CI, 0 locally.</td></tr>
+              <tr><td><code>-Dinclude.groups</code>, <code>-Dexclude.groups</code></td><td>Comma-separated groups to run or leave out.</td><td>Optional.</td></tr>
+              <tr><td><code>-Dsuite</code></td><td>Path of the TestNG suite file.</td><td>Optional; defaults to <code>src/test/resources/testng.xml</code>.</td></tr>
+            </tbody>
+          </table>
+          <p>
+            Templates are provided for local, test, development, and staging environments. Actual environment files are
+            ignored by Git; credentials belong in those files locally or in the CI secret store. The local app listens
+            on port <code>9899</code>, and the local URL defaults to <code>http://127.0.0.1:9899</code>.
+          </p>
+        </section>
+
+        <section id="commands">
+          <h2>Common commands</h2>
+          <table>
+            <thead><tr><th>Command</th><th>Behavior</th></tr></thead>
+            <tbody>
+              <tr><td><code>mvn test</code></td><td>Full suite with the default <code>TEST_ENV</code> (<code>local</code> unless set), in headless Chrome.</td></tr>
+              <tr><td><code>mvn test -Dinclude.groups=smoke</code></td><td>Only tests in the given groups (plus <code>setup</code>).</td></tr>
+              <tr><td><code>mvn test -Dexclude.groups=test-data</code></td><td>Everything except data-changing tests.</td></tr>
+              <tr><td><code>mvn test -Dbrowser=firefox</code></td><td>Runs the UI tests in Firefox (or <code>safari</code>).</td></tr>
+              <tr><td><code>mvn test -Dheadless=false</code></td><td>Runs with visible browser windows.</td></tr>
+              <tr><td><code>TEST_ENV=test mvn test</code></td><td>Full suite against the dedicated test environment.</td></tr>
+              <tr><td><code>TEST_ENV=dev mvn test -Dexclude.groups=test-data</code></td><td>Development suite, without data mutations (also for <code>staging</code>).</td></tr>
+              <tr><td><code>mvn test -Dretries=2</code></td><td>Retries failed tests locally, as CI does.</td></tr>
+              <tr><td><code>mvn allure:serve</code></td><td>Builds the Allure report and opens it in a browser.</td></tr>
+              <tr><td><code>mvn allure:report</code></td><td>Builds the report into <code>target/site/allure-maven-plugin</code>.</td></tr>
+              <tr><td><code>mvn spotless:check</code></td><td>Checks formatting with Google Java Format.</td></tr>
+              <tr><td><code>mvn spotless:apply</code></td><td>Formats the Java sources and removes unused imports.</td></tr>
+              <tr><td><code>git submodule update --remote --init app</code></td><td>Updates <code>app/</code> to the latest upstream commit.</td></tr>
+            </tbody>
+          </table>
+          <pre><code># Run only the API tests (setup still runs)
+mvn test -Dinclude.groups=api
+
+# Run the accessibility scans in visible Firefox
+mvn test -Dinclude.groups=a11y -Dbrowser=firefox -Dheadless=false
+
+# Run the e2e journeys and smoke tests, skipping anything that writes data
+mvn test -Dinclude.groups=e2e,smoke -Dexclude.groups=test-data</code></pre>
+        </section>
+
+        <section id="browsers">
+          <h2>Browser support</h2>
+          <p>
+            Selenium Manager downloads a matching driver, so no driver setup is needed. Network mocks
+            (<code>UsersApiMock</code>) and the smoke test's console and network checks (<code>BrowserDiagnostics</code>)
+            use WebDriver BiDi, enabled with the <code>webSocketUrl</code> capability. Safari doesn't support BiDi yet.
+          </p>
+          <table>
+            <thead><tr><th></th><th>Chrome (default)</th><th>Firefox</th><th>Safari</th></tr></thead>
+            <tbody>
+              <tr><td>Most UI and all API tests</td><td>✅</td><td>✅</td><td>✅</td></tr>
+              <tr><td>Mocked tests (<code>mocked</code> group) and smoke diagnostics</td><td>✅</td><td>✅</td><td>skipped</td></tr>
+              <tr><td>Parallel UI tests</td><td>✅</td><td>✅</td><td>no (one session at a time)</td></tr>
+              <tr><td>Headless</td><td>✅</td><td>✅</td><td>no</td></tr>
+            </tbody>
+          </table>
+          <p>
+            On Safari, BiDi-dependent tests are reported as skipped with the reason, and the <code>ui</code> section
+            switches to one test at a time automatically. Enable Safari automation once: run
+            <code>safaridriver --enable</code>, then turn on <strong>Develop › Allow Remote Automation</strong>.
+          </p>
+        </section>
+
+        <section id="reports">
+          <h2>Reports</h2>
+          <ul>
+            <li>Allure results are written to <code>target/allure-results</code>; <code>mvn allure:serve</code> or <code>mvn allure:report</code> renders them.</li>
+            <li>Tests carry Allure <code>@Feature</code> and <code>@Story</code> labels; page-object and client actions are reported as <code>@Step</code>s (woven by the AspectJ agent configured in Surefire).</li>
+            <li>Failed UI tests attach a screenshot and the page source. Every REST Assured call is attached as a request and response pair.</li>
+            <li>The Allure plugin keeps trend history between runs in <code>.allure/</code> (Git-ignored). CI keeps it in the Actions cache for branch runs, so pull requests don't mix into the trend.</li>
+            <li>Plain TestNG/Surefire results are in <code>target/surefire-reports</code>; the local app's log is <code>target/app-server.log</code>.</li>
+          </ul>
+        </section>
+
+        <section id="file-reference">
+          <h2>File-by-file reference</h2>
+          <p>Every Java source under <code>src/test/java/com/demo/</code> is listed below.</p>
+          <pre><code>src/test/java/com/demo/
+├── api/                    # REST Assured clients, schema checks, OpenAPI reader
+├── config/                 # environment settings; starts and stops the local app
+├── data/                   # test data records, seeded and mock users
+├── support/                # base test classes and TestNG listeners
+├── tests/
+│   ├── api/                # REST, GraphQL, and OpenAPI contract tests
+│   │   └── destructive/    # data reset; runs last (api-destructive)
+│   ├── setup/              # logs in once and saves the session token
+│   └── ui/                 # UI tests
+│       └── e2e/            # multi-screen journeys
+└── ui/                     # driver factory, Expect, browser diagnostics
+    ├── mocks/              # BiDi network mocks and fetch recorder
+    └── pages/              # page objects
+src/test/resources/
+├── schemas/                # JSON Schemas for API responses
+└── testng.xml              # suite sections and listeners</code></pre>
+          <h3>Tests</h3>
+          <table>
+            <thead><tr><th>File</th><th>Responsibility</th></tr></thead>
+            <tbody>
+              <tr><td><a href="../src/test/java/com/demo/tests/setup/AuthSetupTest.java"><code>tests/setup/AuthSetupTest.java</code></a></td><td>Logs in through the UI once and saves the <code>x-api-token</code> (the <code>setup</code> section).</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/tests/api/UsersApiTest.java"><code>tests/api/UsersApiTest.java</code></a></td><td>REST auth, list, search, count, CRUD, duplicates, protected user, missing-user 404s, and bulk-create scenarios.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/tests/api/UsersGraphqlTest.java"><code>tests/api/UsersGraphqlTest.java</code></a></td><td>GraphQL queries, mutations, errors, the missing API key, and REST cross-checks.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/tests/api/OpenApiContractTest.java"><code>tests/api/OpenApiContractTest.java</code></a></td><td>Checks the published OpenAPI document against the REST client and the JSON Schemas.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/tests/api/destructive/ResetDataTest.java"><code>tests/api/destructive/ResetDataTest.java</code></a></td><td>Data reset, run last in the <code>api-destructive</code> section.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/tests/ui/SmokeTest.java"><code>tests/ui/SmokeTest.java</code></a></td><td>Home-page smoke check with console and network diagnostics. The Swagger navigation test is disabled (<code>enabled = false</code>), as in the Playwright suite.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/tests/ui/LoginTest.java"><code>tests/ui/LoginTest.java</code></a></td><td>Login form rendering, required-field validation, and successful login.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/tests/ui/UsersScreenTest.java"><code>tests/ui/UsersScreenTest.java</code></a></td><td>Users table, search, API-created user, add-user form, validation, and edit mode.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/tests/ui/UsersSignedOutTest.java"><code>tests/ui/UsersSignedOutTest.java</code></a></td><td>Redirect without a token, and logout with its own session (logout revokes the key).</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/tests/ui/UsersApiFailureTest.java"><code>tests/ui/UsersApiFailureTest.java</code></a></td><td>Mocked list failures, rejected API key, empty states, and add-user errors.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/tests/ui/MockedUsersTest.java"><code>tests/ui/MockedUsersTest.java</code></a></td><td>Mocked users: slow responses, inline edit, delete confirmation and failures, and data reset.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/tests/ui/AccessibilityTest.java"><code>tests/ui/AccessibilityTest.java</code></a></td><td>axe-core WCAG 2.1 A/AA scans of the login page, users page, add-user dialog, and protected-user icon.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/tests/ui/e2e/UsersJourneyTest.java"><code>tests/ui/e2e/UsersJourneyTest.java</code></a></td><td>Login, search, and logout journey, plus an add, update, and delete journey in <code>test-data</code>.</td></tr>
+            </tbody>
+          </table>
+          <h3>Framework code</h3>
+          <table>
+            <thead><tr><th>File</th><th>Responsibility</th></tr></thead>
+            <tbody>
+              <tr><td><a href="../src/test/java/com/demo/config/Environment.java"><code>config/Environment.java</code></a></td><td>Reads settings, resolves <code>BASE_URL</code> and credentials, and guards test-data targets.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/config/LocalApp.java"><code>config/LocalApp.java</code></a></td><td>Starts the <code>app/</code> submodule for loopback runs, or reuses a running app; stops it afterwards.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/api/UsersApiClient.java"><code>api/UsersApiClient.java</code></a></td><td>Authenticated, schema-validating REST operations, and the list of operations the contract test checks.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/api/GraphqlClient.java"><code>api/GraphqlClient.java</code></a></td><td>GraphQL documents and a client that validates response envelopes.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/api/OpenApiDocument.java"><code>api/OpenApiDocument.java</code></a></td><td>Fetches the embedded OpenAPI document and compares it with the JSON Schemas.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/api/ApiResponses.java"><code>api/ApiResponses.java</code></a></td><td>Checks HTTP status and parses schema-validated bodies and errors.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/api/ApiSpecs.java"><code>api/ApiSpecs.java</code></a></td><td>Shared REST Assured request setup, with the Allure filter.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/api/Json.java"><code>api/Json.java</code></a></td><td>Jackson mapper, JSON Schema assertions, and schema file loading.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/api/Schemas.java"><code>api/Schemas.java</code></a>, <a href="../src/test/java/com/demo/api/ApiError.java"><code>api/ApiError.java</code></a></td><td>Schema file names, and the API error body record.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/data/TestData.java"><code>data/TestData.java</code></a></td><td>Seeded user, protected and missing IDs, search terms, and mock users.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/data/NewUser.java"><code>data/NewUser.java</code></a>, <a href="../src/test/java/com/demo/data/ApiUser.java"><code>data/ApiUser.java</code></a></td><td>Create payloads (with <code>unique()</code>) and user records as the API returns them.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/support/BaseTest.java"><code>support/BaseTest.java</code></a></td><td>Per-test REST and GraphQL clients and disposable API users.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/support/BaseUiTest.java"><code>support/BaseUiTest.java</code></a></td><td>Per-test browser, page objects, <code>Expect</code>, mocks, axe, signed-in start, and failure evidence.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/support/ApiTestUser.java"><code>support/ApiTestUser.java</code></a></td><td>A test-owned user that deletes itself by email on <code>close()</code>.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/support/AuthState.java"><code>support/AuthState.java</code></a></td><td>The shared session token saved by the setup test.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/support/KnownDefect.java"><code>support/KnownDefect.java</code></a>, <a href="../src/test/java/com/demo/support/KnownDefectListener.java"><code>KnownDefectListener.java</code></a></td><td>Marks and inverts tests of known app defects.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/support/SuiteLifecycle.java"><code>support/SuiteLifecycle.java</code></a></td><td>Starts and stops the local app; counts failures.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/support/RetryFailedTests.java"><code>support/RetryFailedTests.java</code></a></td><td>Retry policy: 2 in CI, 0 locally, never for known defects.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/support/GroupFilter.java"><code>support/GroupFilter.java</code></a></td><td>Group include/exclude filtering from system properties.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/support/BrowserParallelism.java"><code>support/BrowserParallelism.java</code></a></td><td>Runs UI tests one at a time on Safari.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/ui/DriverFactory.java"><code>ui/DriverFactory.java</code></a></td><td>Creates Chrome, Firefox, or Safari sessions with BiDi enabled; reports BiDi support.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/ui/Expect.java"><code>ui/Expect.java</code></a></td><td>Waiting assertions that fail with the expected and last observed values.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/ui/BrowserDiagnostics.java"><code>ui/BrowserDiagnostics.java</code></a></td><td>Collects console errors, page errors, failed requests, and HTTP errors through BiDi.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/ui/mocks/UsersApiMock.java"><code>ui/mocks/UsersApiMock.java</code></a></td><td>BiDi network mocks for users-API endpoints: fulfil, abort, and hold requests.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/ui/mocks/FetchRecorder.java"><code>ui/mocks/FetchRecorder.java</code></a></td><td>Records the page's <code>fetch</code> calls with their bodies, which BiDi does not expose yet.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/ui/pages/LoginPage.java"><code>ui/pages/LoginPage.java</code></a></td><td>Login form locators and actions.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/ui/pages/UsersPage.java"><code>ui/pages/UsersPage.java</code></a></td><td>Users screen locators, dialogs, and user-management actions.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/ui/pages/Row.java"><code>ui/pages/Row.java</code></a></td><td>A users-table row and the buttons and fields inside it.</td></tr>
+              <tr><td><a href="../src/test/java/com/demo/ui/pages/BasePage.java"><code>ui/pages/BasePage.java</code></a>, <a href="../src/test/java/com/demo/ui/pages/XPath.java"><code>XPath.java</code></a></td><td>Shared click and fill actions, and safe XPath string literals.</td></tr>
+            </tbody>
+          </table>
+          <h3>Related root files</h3>
+          <ul>
+            <li><a href="../pom.xml"><code>pom.xml</code></a> — dependencies, Surefire (kept on 3.5.x so it can read <code>testng.xml</code>), Allure, AspectJ, and Spotless.</li>
+            <li><a href="../src/test/resources/testng.xml"><code>src/test/resources/testng.xml</code></a> — suite sections, parallelism, and listeners.</li>
+            <li><a href="../src/test/resources/META-INF/services/org.testng.ITestNGListener"><code>META-INF/services/org.testng.ITestNGListener</code></a> — registers <code>BrowserParallelism</code>.</li>
+            <li><a href="../src/test/resources/allure.properties"><code>allure.properties</code></a> and <a href="../src/test/resources/simplelogger.properties"><code>simplelogger.properties</code></a> — Allure results directory and log level.</li>
+            <li><a href="../.gitmodules"><code>.gitmodules</code></a> — the <code>app</code> submodule URL and tracked branch (<code>main</code>).</li>
+            <li><a href="../.github/workflows/selenium.yml"><code>.github/workflows/selenium.yml</code></a> — GitHub Actions validation and test artifacts.</li>
+            <li><a href="../env/.env.example"><code>env/.env.example</code></a>, <a href="../env/.env.test.example"><code>env/.env.test.example</code></a>, <a href="../env/.env.dev.example"><code>env/.env.dev.example</code></a>, and <a href="../env/.env.staging.example"><code>env/.env.staging.example</code></a> — environment templates.</li>
+            <li><a href="../README.md"><code>README.md</code></a> — the short version of this guide.</li>
+          </ul>
+        </section>
+
+        <section id="adding-tests">
+          <h2>Adding tests</h2>
+          <h3>UI test</h3>
+          <ol>
+            <li>Add a class under <code>com.demo.tests.ui</code>, or a full user journey under <code>com.demo.tests.ui.e2e</code>, extending <code>BaseUiTest</code>.</li>
+            <li>Use page-object <code>By</code> fields. Prefer ids, then accessible names (<code>aria-label</code>, visible text).</li>
+            <li>Assert on the page through <code>expect()</code>, which waits; don't assert on a single <code>findElement</code> read, and don't add fixed sleeps.</li>
+            <li>Call <code>openAuthenticatedUsersPage()</code> to start signed in, or use <code>loginPage()</code> when testing login itself.</li>
+          </ol>
+          <pre><code>@Test(groups = "users", description = "filters users by email without case sensitivity")
+public void filtersByEmailIgnoringCase() {
+  UsersPage usersPage = openAuthenticatedUsersPage();
+
+  usersPage.searchFor(TestData.Searches.JANE_BY_EMAIL_CASE_INSENSITIVE);
+
+  expect().visible(usersPage.userRow(TestData.JANE.name()).locator());
+  expect().count(usersPage.userRows, 1);
+}</code></pre>
+
+          <h3>API test</h3>
+          <ol>
+            <li>Add a class under <code>com.demo.tests.api</code> extending <code>BaseTest</code>.</li>
+            <li>Use <code>usersApi()</code> so requests are authenticated and response schemas are validated.</li>
+            <li>Use <code>createApiTestUser()</code> in try-with-resources only for tests that need a record created for the test.</li>
+            <li>Use <code>graphqlApi()</code> for GraphQL; add new operations to <code>GraphqlClient.Documents</code>.</li>
+            <li>When the client calls a new REST operation, add it to <code>UsersApiClient.OPERATIONS</code> so the contract test checks it, and add a schema file for its response.</li>
+            <li>Put data-changing tests in the <code>test-data</code> group.</li>
+          </ol>
+          <pre><code>@Test(
+    groups = {"api", "test-data"},
+    description = "GET /users/{id} returns a created user")
+public void getReturnsCreatedUser() {
+  try (ApiTestUser created = createApiTestUser()) {
+    ApiUser user = usersApi().getUser(created.id());
+
+    assertThat(user)
+        .isEqualTo(new ApiUser(created.id(), created.name(), created.email(), created.username()));
+  }
+}</code></pre>
+          <h3>Accessibility, mocked, and known-defect tests</h3>
+          <ul>
+            <li>Accessibility: run <code>axe().analyze(driver())</code> and assert there are no violations. Scope with <code>.include(...)</code> instead of disabling rules.</li>
+            <li>Network failures: use <code>usersApiMock().fulfill</code>, <code>respondWithUsers</code>, <code>abort</code>, or <code>hold</code>. The newest mock wins, and unmatched requests reach the real app. Use <code>TestData.MockUsers</code> for rows a test edits or deletes, and always mock data resets in UI tests. Put these tests in the <code>mocked</code> group.</li>
+            <li>To check what the page sent, use <code>FetchRecorder.install(driver())</code>; BiDi in Selenium does not expose request bodies yet.</li>
+            <li>Known app defects: write the test for the correct behaviour, annotate it with <code>@KnownDefect("…")</code> describing the defect, and add the <code>known-defect</code> group.</li>
+          </ul>
+          <pre><code>@Test(
+    groups = {"users", "mocked"},
+    description = "shows a fetch error when the users request fails at the network level")
+public void networkFailureOnList() {
+  UsersPage usersPage = openAuthenticatedUsersPage();
+  expect().visible(usersPage.userRow(TestData.JANE.name()).locator());
+  usersApiMock().abort(Endpoint.LIST, "GET");
+
+  usersPage.refreshUsers();
+
+  expect().visible(usersPage.fetchFailedMessage);
+}</code></pre>
+          <p>Run <code>mvn spotless:apply</code> before committing; CI fails on unformatted code.</p>
+        </section>
+
+        <section id="ci">
+          <h2>Continuous integration</h2>
+          <p>
+            The GitHub Actions workflow (<a href="../.github/workflows/selenium.yml"><code>selenium.yml</code></a>) runs
+            on every push, on pull requests, and on manual dispatch. It uses Java 21 (Temurin) and Node.js 22 on
+            <code>ubuntu-24.04</code> with a 30-minute timeout, and cancels an in-progress run for the same ref. It runs
+            these steps in order:
+          </p>
+          <ol>
+            <li>Check out the repository with submodules, then run <code>git submodule update --remote --init app</code> so the app is tested at the latest <code>main</code> commit (logged in the job output).</li>
+            <li>Set up Java and Node with Maven and npm caches; fail early if the credential secrets are missing.</li>
+            <li>Install app dependencies with <code>npm ci --prefix app</code>, then check formatting with <code>mvn spotless:check</code>.</li>
+            <li>Restore Allure history from the Actions cache.</li>
+            <li>Run <code>mvn test</code> against <code>http://127.0.0.1:9899</code> in the runner's preinstalled Chrome, with two retries.</li>
+            <li>Build the Allure report; on non-PR runs, save Allure history to the cache.</li>
+            <li>Upload the Allure report, Surefire results, and <code>target/app-server.log</code> as the <code>test-results</code> artifact.</li>
+          </ol>
+          <table>
+            <thead><tr><th>GitHub setting</th><th>Value</th></tr></thead>
+            <tbody>
+              <tr><td>Secret <code>TEST_LOGIN_USERNAME</code></td><td>Test account username.</td></tr>
+              <tr><td>Secret <code>TEST_LOGIN_PASSWORD</code></td><td>Test account password.</td></tr>
+            </tbody>
+          </table>
+          <p>
+            The workflow only needs <code>contents: read</code>. All third-party actions are pinned to commit SHAs.
+          </p>
+        </section>
+
+        <footer>
+          <p>Keep this guide aligned with the base classes, JSON Schemas, suite sections, and commands whenever the framework structure changes.</p>
+        </footer>
+      </main>
+    </div>
+    <script>
+      // Show the framework name in the sidebar heading once the page title scrolls out of view.
+      (() => {
+        const brand = document.querySelector('aside .brand');
+        const title = document.getElementById('page-title');
+        if (!brand || !title || !('IntersectionObserver' in window)) return;
+        new IntersectionObserver(([entry]) => {
+          brand.classList.toggle('show-app', !entry.isIntersecting);
+        }).observe(title);
+      })();
+    </script>
+  </body>
+</html>
