@@ -2,15 +2,15 @@
 
 UI and API tests for the [Users demo app](https://github.com/srinivasaimandi/users-app-demo), written with Selenium and Java. It is a port of the Playwright framework in `copilot-playwright-framework`: the same scenarios, test data and safety rules, rebuilt on a Java stack.
 
-For the full developer guide (architecture, base classes, API validation, file reference and more), open [`docs/index.html`](docs/index.html) in a browser.
+For the full developer guide (architecture, base classes, API validation, the requirement-to-test orchestrator, file reference and more), open [`docs/index.html`](docs/index.html) in a browser. Test conventions are in [`docs/test-writing-standards.md`](docs/test-writing-standards.md).
 
 ## What it covers
 
 - **UI**: login, users screen, smoke checks with console and network diagnostics, end-to-end journeys, axe-core
   accessibility scans, and network-mocked failure states, in Chrome (Firefox fully supported, Safari with limits).
 - **API**: REST, the GraphQL API, and the published OpenAPI contract, with JSON Schema validation of responses.
-- **Tooling**: per-environment config, safe disposable test data, Allure reports with trend history, and GitHub
-  Actions CI.
+- **Tooling**: per-environment config, safe disposable test data, Allure reports with trend history, GitHub
+  Actions CI, and a Claude Code orchestrator that writes tests from requirements using a Selenium MCP browser.
 
 ## Stack
 
@@ -124,9 +124,15 @@ src/test/java/com/demo/
 src/test/resources/
   testng.xml  Suite sections and listeners
   schemas/    JSON Schemas for API responses
+docs/         Developer guide (index.html) and test-writing standards
+requirement/  Requirements read by the requirement-to-test orchestrator
+.claude/      Orchestrator skill and writer/healer agents
+.mcp.json     Selenium MCP server
 ```
 
 ## Writing tests
+
+The full conventions are in [`docs/test-writing-standards.md`](docs/test-writing-standards.md). In short:
 
 - **UI tests** extend `BaseUiTest`. Each test gets its own browser. Tests start signed out; call `openAuthenticatedUsersPage()` to start signed in with the shared session.
 - **API tests** extend `BaseTest`. `usersApi()` and `graphqlApi()` log in once per test, so a test can log out without affecting others.
@@ -154,3 +160,68 @@ mvn spotless:check   # verify
 `.github/workflows/selenium.yml` runs on every push and pull request on Ubuntu with Chrome. It checks formatting with Spotless, updates the app submodule to the latest `main`, runs the suite with two retries, builds the Allure report, and uploads the report, the Surefire results and the app log as the `test-results` artifact. Allure history is kept in the Actions cache for branch runs.
 
 Add the repository secrets `TEST_LOGIN_USERNAME` and `TEST_LOGIN_PASSWORD` (the app's login) before the first run.
+
+## Selenium MCP
+
+The root `.mcp.json` configures the community [Selenium MCP server](https://github.com/angiejones/mcp-selenium) (`@angiejones/mcp-selenium`, pinned to 0.2.3 and run with `npx`), which lets an AI assistant drive a live Chrome, Firefox, Edge or Safari session through Selenium WebDriver. Claude Code reads the file when opened at the repository root and asks you to approve the `selenium` server; the orchestrator's agents use it to explore the running app. Copilot in VS Code can use the same file: trust the workspace/server when prompted, then start the `selenium` server from the MCP servers UI. If VS Code does not load workspace-root MCP configuration, enable the `chat.mcp.workspaceRootConfig.enabled` setting.
+
+The MCP server is an agent-facing browser tool; automated test runs use TestNG and `DriverFactory` directly, and CI does not use it. Its browser is a separate session: it doesn't get the shared login token, the BiDi network mocks or the suite's window size. Start the app first with `npm --prefix app start` (the suite only runs it during `mvn test`), point the MCP browser only at the local app (the test-data safety checks don't cover clicks made through MCP), and never put `LOGIN_USERNAME` or `LOGIN_PASSWORD` in `.mcp.json`.
+
+## Requirement-to-test orchestrator (Claude Code)
+
+`/requirement-to-test <requirement-id-or-path>` turns a requirement from the [`requirement/`](requirement/) folder
+into Selenium tests. Nothing is committed or pushed until you approve. The
+[developer guide](./docs/index.html#orchestrator) covers the flow in detail.
+
+```bash
+/requirement-to-test REQ-001
+```
+
+### Prerequisites
+
+- Claude Code opened at the repository root, with the `selenium` MCP server from `.mcp.json` enabled.
+- JDK, Maven, Node.js and Chrome installed as in [Prerequisites](#prerequisites), and the app submodule set up as in
+  [Setup](#setup).
+- `LOGIN_USERNAME` and `LOGIN_PASSWORD` in `env/.env.local`. Without them, authenticated tests skip and the
+  orchestrator reports them as not verified.
+
+### Writing a requirement
+
+Copy `requirement/_template.md` to `requirement/REQ-<nnn>-<slug>.md`, describe the feature, list numbered
+acceptance criteria (`AC1`, `AC2`, …) as observable outcomes, and set `status: ready`. Each criterion becomes at
+least one test. See [`requirement/README.md`](requirement/README.md) for the format and
+[`REQ-001-user-search.md`](requirement/REQ-001-user-search.md) for an example. Generated tests carry the Allure
+annotation `@Story("REQ-001: <short title>")`, so you can find a requirement's tests by its ID.
+
+### What a run does
+
+1. **Preconditions**: finds the requirement file, warns about uncommitted test changes, and creates the branch
+   `tests/<id>` (for example `tests/req-001`).
+2. **Read**: extracts acceptance criteria, out-of-scope notes and test-data hints. A `draft` requirement or unclear
+   criteria make it stop and ask.
+3. **Plan**: maps each criterion to a test class, method and groups, skipping criteria that existing tests already
+   cover.
+4. **Write**: the `selenium-test-writer` agent checks locators in the live app through Selenium MCP, then adds test
+   classes, page objects and test data.
+5. **Verify**: runs `spotless:check`, `test-compile`, and a generated suite (`target/requirement-suite.xml`) holding
+   only the changed classes, with the same listeners as `testng.xml` and no retries.
+6. **Heal**: on failure, the `selenium-test-healer` agent works out whether the test, the app or the environment
+   is at fault, and fixes only test defects. At most three attempts; it stops early on an app or environment
+   problem.
+7. **Stability**: runs the passing suite two more times to catch flaky tests.
+8. **Approve**: shows coverage per criterion, the diff, run results and suspected app defects, then asks you to
+   **approve and commit** (no push), **request changes** (back to step 4 with your notes), or **reject and
+   discard** (removes the run's changes and branch).
+
+The healer never makes a test pass by loosening or deleting an assertion tied to a criterion, disabling or skipping
+the test, adding `@KnownDefect`, adding `Thread.sleep` or JavaScript clicks, raising timeouts, or editing `app/`,
+`pom.xml`, `testng.xml` or the framework support code. The orchestrator checks the diff after each heal and reverts
+any weakened assertion.
+
+| File                                          | Role                                                                      |
+| --------------------------------------------- | ------------------------------------------------------------------------- |
+| `requirement/*.md`                            | Requirements with numbered acceptance criteria (the orchestrator's input) |
+| `.claude/skills/requirement-to-test/SKILL.md` | Orchestrator: phases, heal limit, approval step                           |
+| `.claude/agents/selenium-test-writer.md`      | Explores the app with Selenium MCP and writes the tests                   |
+| `.claude/agents/selenium-test-healer.md`      | Diagnoses failures and fixes test defects only (never weakens assertions) |
+| `docs/test-writing-standards.md`              | The writing standard both agents follow                                   |
