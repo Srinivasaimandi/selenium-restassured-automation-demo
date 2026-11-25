@@ -140,6 +140,16 @@ src/test/resources/
 
 Annotate a test of the correct behaviour with `@KnownDefect("…")`. It is reported as passing while it fails, and fails once the defect is fixed, so the annotation gets removed.
 
+## AI-assisted authoring (Selenium MCP)
+
+`.mcp.json` registers the community [Selenium MCP server](https://github.com/angiejones/mcp-selenium) (`@angiejones/mcp-selenium`, run with `npx`), so MCP clients such as Claude Code can drive a live Chrome or Firefox session. Use it to explore the app, check locators against the real page before they go into a page object, and replay the steps of a failing test. It is a local authoring aid only: it is not part of the TestNG suite, and CI does not use it.
+
+- **Start the app first.** The suite only runs the app during `mvn test`. For MCP sessions, run `npm --prefix app start` (it serves `http://127.0.0.1:9899`).
+- **Local app only.** The test-data safety checks do not cover clicks made through MCP, so don't point it at shared environments.
+- **Keep credentials out of config.** Never put `LOGIN_USERNAME` or `LOGIN_PASSWORD` in `.mcp.json`. Anything typed in an MCP session ends up in the chat transcript.
+- **Findings become real tests.** Turn what you learn into `By` fields on page objects and TestNG tests that extend `BaseUiTest`, use `expect()` and have groups. MCP steps are not tests.
+- **Separate session.** The MCP browser doesn't use `DriverFactory`, the shared login token or the BiDi mocks, and it doesn't support Safari.
+
 ## Formatting and linting
 
 Spotless is set up with Google Java Format:
