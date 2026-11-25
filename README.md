@@ -4,6 +4,14 @@ UI and API tests for the [Users demo app](https://github.com/srinivasaimandi/use
 
 For the full developer guide (architecture, base classes, API validation, file reference and more), open [`docs/index.html`](docs/index.html) in a browser.
 
+## What it covers
+
+- **UI**: login, users screen, smoke checks with console and network diagnostics, end-to-end journeys, axe-core
+  accessibility scans, and network-mocked failure states, in Chrome (Firefox fully supported, Safari with limits).
+- **API**: REST, the GraphQL API, and the published OpenAPI contract, with JSON Schema validation of responses.
+- **Tooling**: per-environment config, safe disposable test data, Allure reports with trend history, and GitHub
+  Actions CI.
+
 ## Stack
 
 | Concern | Tool |
@@ -52,8 +60,6 @@ git submodule update --remote --init app
 | Another environment | `TEST_ENV=dev mvn test -Dexclude.groups=test-data` |
 | Retry failures | `mvn test -Dretries=2` (CI retries twice by default) |
 
-Groups: `setup`, `smoke`, `login`, `validation`, `auth`, `users`, `mocked`, `e2e`, `a11y`, `api`, `graphql`, `contract`, `test-data`, `destructive`, `known-defect`. The `setup` test always runs, because the UI tests depend on it.
-
 ## Environments
 
 `TEST_ENV` selects `local` (default), `test`, `dev` or `staging`. Settings come from, in order of precedence: a `-D` system property, a process environment variable, then `env/.env.<TEST_ENV>`. Each environment has a committed `env/.env.*.example` template; the real files are git-ignored.
@@ -66,15 +72,6 @@ Groups: `setup`, `smoke`, `login`, `validation`, `auth`, `users`, `mocked`, `e2e
 
 **Test data safety.** Tests that create, change or delete users (group `test-data`) only run against a loopback URL with `TEST_ENV=local`, or against an allowlisted host with `TEST_ENV=test`. Anywhere else they fail before sending a request. Leave them out on shared environments with `-Dexclude.groups=test-data`.
 
-## Reports
-
-```bash
-mvn allure:serve    # build the report and open it in a browser
-mvn allure:report   # build it into target/site/allure-maven-plugin
-```
-
-Failed UI tests attach a screenshot and the page source. API calls are attached as request and response pairs. The Allure plugin keeps trend history between runs in `.allure/`. Plain TestNG/Surefire results are in `target/surefire-reports`.
-
 ## How the suite runs
 
 `src/test/resources/testng.xml` runs four sections in order. Tests inside a section run in parallel (four threads).
@@ -83,6 +80,12 @@ Failed UI tests attach a screenshot and the page source. API calls are attached 
 2. **api**: REST, GraphQL and OpenAPI contract tests. Classes run in parallel; methods in a class run in order.
 3. **ui**: UI tests, one fresh browser per test.
 4. **api-destructive**: the data reset, which deletes users other tests rely on. It runs last and is skipped if any earlier test failed.
+
+## Tags
+
+Every test is in one or more TestNG groups: `setup`, `smoke`, `login`, `validation`, `auth`, `users`, `mocked`, `e2e`, `a11y`, `api`, `graphql`, `contract`, `test-data`, `destructive`, `known-defect`. The `setup` test always runs, because the UI tests depend on it.
+
+Filter with `-Dinclude.groups=<group>` or exclude with `-Dexclude.groups=<group>`.
 
 ## Browser support
 
@@ -97,9 +100,18 @@ Network mocks (`UsersApiMock`) and the smoke test's console and network checks (
 
 On Safari, those tests are reported as skipped with the reason, and the UI section switches to one test at a time automatically.
 
-## Project layout
+## Reports
 
+```bash
+mvn allure:serve    # build the report and open it in a browser
+mvn allure:report   # build it into target/site/allure-maven-plugin
 ```
+
+Failed UI tests attach a screenshot and the page source. API calls are attached as request and response pairs. The Allure plugin keeps trend history between runs in `.allure/`. Plain TestNG/Surefire results are in `target/surefire-reports`.
+
+## Project structure
+
+```text
 src/test/java/com/demo/
   config/     Environment settings; starts and stops the local app
   data/       Test data records and the seeded/mock users
@@ -122,10 +134,13 @@ src/test/resources/
 - **Assertions on the page** go through `expect()`, which waits until the page reaches the expected state (up to 5 seconds). Don't assert on a single `findElement` read.
 - **Locators** are `By` fields on page objects. Prefer ids, then accessible names (`aria-label`, visible text).
 - **Mocking the API**: `usersApiMock().fulfill(...)`, `.abort(...)`, `.hold(...)` and `.respondWithUsers(...)`. The newest mock wins, and unmatched requests reach the real app.
-- **Known app defects**: annotate a test of the correct behaviour with `@KnownDefect("…")`. It is reported as passing while it fails, and fails once the defect is fixed, so the annotation gets removed.
 - **Tags**: put every test in TestNG `groups`. Add `test-data` to anything that writes data.
 
-## Formatting
+### Known app defects
+
+Annotate a test of the correct behaviour with `@KnownDefect("…")`. It is reported as passing while it fails, and fails once the defect is fixed, so the annotation gets removed.
+
+## Formatting and linting
 
 Spotless is set up with Google Java Format:
 
@@ -134,7 +149,7 @@ mvn spotless:apply   # format
 mvn spotless:check   # verify
 ```
 
-## CI
+## Continuous integration
 
 `.github/workflows/selenium.yml` runs on every push and pull request on Ubuntu with Chrome. It checks formatting with Spotless, updates the app submodule to the latest `main`, runs the suite with two retries, builds the Allure report, and uploads the report, the Surefire results and the app log as the `test-results` artifact. Allure history is kept in the Actions cache for branch runs.
 
