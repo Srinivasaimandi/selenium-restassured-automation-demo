@@ -1,8 +1,10 @@
 {
   "mcpServers": {
     "selenium": {
+      "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@angiejones/mcp-selenium"]
+      "args": ["-y", "@angiejones/mcp-selenium@0.2.3"],
+      "tools": ["*"]
     }
   }
 }

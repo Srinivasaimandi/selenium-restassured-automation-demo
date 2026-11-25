@@ -211,6 +211,7 @@
           <a href="#reports">Reports</a>
           <a href="#file-reference">File reference</a>
           <a href="#adding-tests">Adding tests</a>
+          <a href="#orchestrator">Requirement-to-test orchestrator</a>
           <a href="#ci">CI</a>
         </nav>
       </aside>
@@ -221,7 +222,7 @@
           <h1 id="page-title">Users App Test Framework</h1>
           <p class="lead">
             A practical guide to how this Java framework configures environments, starts the app under test, runs
-            browser and API tests, manages test data, validates API responses, and organizes its source files. It is
+            browser and API tests, manages test data, validates API responses, organizes its source files, and generates tests from requirements. It is
             a port of the Playwright framework in <code>copilot-playwright-framework</code>: the same scenarios, test
             data, and safety rules, rebuilt on a Java stack.
           </p>
@@ -234,6 +235,7 @@
             <span class="badge">JSON Schema validation</span>
             <span class="badge">axe-core accessibility</span>
             <span class="badge">Allure reports</span>
+            <span class="badge">Claude Code orchestrator</span>
           </div>
         </header>
 
@@ -668,6 +670,10 @@ src/test/resources/
             <li><a href="../.gitmodules"><code>.gitmodules</code></a> — the <code>app</code> submodule URL and tracked branch (<code>main</code>).</li>
             <li><a href="../.github/workflows/selenium.yml"><code>.github/workflows/selenium.yml</code></a> — GitHub Actions validation and test artifacts.</li>
             <li><a href="../env/.env.example"><code>env/.env.example</code></a>, <a href="../env/.env.test.example"><code>env/.env.test.example</code></a>, <a href="../env/.env.dev.example"><code>env/.env.dev.example</code></a>, and <a href="../env/.env.staging.example"><code>env/.env.staging.example</code></a> — environment templates.</li>
+            <li><a href="../requirement/README.md"><code>requirement/</code></a> — requirement files read by the <a href="#orchestrator">orchestrator</a>.</li>
+            <li><a href="../.claude/skills/requirement-to-test/SKILL.md"><code>.claude/</code></a> — the orchestrator skill and its writer and healer agents.</li>
+            <li><a href="test-writing-standards.md"><code>docs/test-writing-standards.md</code></a> — conventions every test follows.</li>
+            <li><a href="../.mcp.json"><code>.mcp.json</code></a> — Selenium MCP server used by the orchestrator's agents (and by Copilot in VS Code).</li>
             <li><a href="../README.md"><code>README.md</code></a> — the short version of this guide.</li>
           </ul>
         </section>
@@ -731,6 +737,150 @@ public void networkFailureOnList() {
   expect().visible(usersPage.fetchFailedMessage);
 }</code></pre>
           <p>Run <code>mvn spotless:apply</code> before committing; CI fails on unformatted code.</p>
+          <p>
+            All tests follow <a href="test-writing-standards.md"><code>docs/test-writing-standards.md</code></a>.
+            To have tests written for a requirement automatically, use the
+            <a href="#orchestrator">requirement-to-test orchestrator</a>.
+          </p>
+        </section>
+
+        <section id="orchestrator">
+          <h2>Requirement-to-test orchestrator</h2>
+          <p>
+            The orchestrator is a Claude Code workflow that turns a requirement written in the repository into
+            Selenium tests. You give it a requirement ID. It plans one scenario per acceptance criterion, has a
+            writer agent add the tests, runs them, has a healer agent fix failures, checks the result for flakiness,
+            and then asks you to approve the changes. Nothing is committed or pushed until you approve.
+          </p>
+          <pre><code>/requirement-to-test REQ-001</code></pre>
+
+          <h3>Prerequisites</h3>
+          <ul>
+            <li>Claude Code, opened at the repository root so it loads <code>.claude/</code> and <code>.mcp.json</code>.</li>
+            <li>The <code>selenium</code> MCP server from <code>.mcp.json</code> enabled; the agents use it to explore the running app.</li>
+            <li>JDK, Maven, Node.js, Chrome and the app submodule set up (see <a href="#quick-start">Quick start</a>).</li>
+            <li>
+              <code>LOGIN_USERNAME</code> and <code>LOGIN_PASSWORD</code> set in <code>env/.env.local</code>. Without them,
+              authenticated tests skip and the orchestrator reports them as not verified rather than passed.
+            </li>
+          </ul>
+
+          <h3>Selenium MCP</h3>
+          <p>
+            <a href="../.mcp.json"><code>.mcp.json</code></a> configures the community
+            <code>@angiejones/mcp-selenium</code> server (pinned to 0.2.3, run with <code>npx</code>). It drives a live
+            browser through Selenium WebDriver: <code>start_browser</code>, <code>navigate</code>, <code>interact</code>,
+            <code>send_keys</code>, <code>get_element_text</code>, <code>get_element_attribute</code>,
+            <code>diagnostics</code> and more, plus an <code>accessibility://current</code> resource with the page's
+            accessibility tree. The agents use it to confirm locators and reproduce failures before they change code.
+          </p>
+          <div class="notice">
+            <strong>An authoring tool, not part of the suite.</strong> Test runs use TestNG and <code>DriverFactory</code>;
+            CI does not use MCP. The MCP browser is a separate session without the shared login token or the BiDi
+            mocks. Start the app first with <code>npm --prefix app start</code>, point the MCP browser only at the local
+            app, and never put credentials in <code>.mcp.json</code>.
+          </div>
+
+          <h3>Writing a requirement</h3>
+          <p>
+            Requirements live in <a href="../requirement/"><code>requirement/</code></a>, one Markdown file per feature,
+            named <code>&lt;ID&gt;-&lt;slug&gt;.md</code> (for example <code>REQ-001-user-search.md</code>). Copy
+            <a href="../requirement/_template.md"><code>requirement/_template.md</code></a> to start one; files starting
+            with <code>_</code> are ignored. The format is described in
+            <a href="../requirement/README.md"><code>requirement/README.md</code></a>.
+          </p>
+          <pre><code>---
+id: REQ-001
+title: Search users by name or email
+status: ready        # draft | ready
+---
+
+## Description
+A signed-in user on the Users screen can narrow the users table by typing in the search box.
+
+## Acceptance criteria
+- AC1: Given I am on the Users screen, when I search for part of an existing user's name,
+  then only users whose name matches are listed.
+- AC2: ...
+
+## Out of scope
+- Search through the API or GraphQL.
+
+## Test data
+- Use the seeded users from TestData; do not create users for these scenarios.</code></pre>
+          <ul>
+            <li>Each numbered acceptance criterion becomes at least one test, so write each one as an observable outcome.</li>
+            <li><code>status: draft</code> makes the orchestrator ask before it continues; set <code>ready</code> when the criteria are final.</li>
+            <li>
+              Generated tests carry the Allure annotation <code>@Story("REQ-001: &lt;short title&gt;")</code>, so a
+              requirement's tests can be found by searching for its ID and are grouped in the Allure report.
+            </li>
+          </ul>
+
+          <h3>How a run works</h3>
+          <p>
+            The orchestrator itself runs in your Claude Code session and makes every decision. It hands two jobs to
+            subagents, each of which starts with a fresh context, does its job, and reports back. The subagents never
+            call each other.
+          </p>
+          <ol class="flow">
+            <li><strong>Preconditions.</strong><br>Finds the requirement file, checks for uncommitted test changes, and creates the branch <code>tests/req-001</code>.</li>
+            <li><strong>Read.</strong><br>Extracts the numbered acceptance criteria, out-of-scope notes, and test-data hints.</li>
+            <li><strong>Plan.</strong><br>Maps each criterion to a test class, method, and groups, and skips criteria existing tests already cover.</li>
+            <li><strong>Write.</strong><br>The writer agent confirms locators in the live app through Selenium MCP, then adds test classes, page objects, and data.</li>
+            <li><strong>Verify.</strong><br>Runs <code>spotless:check</code>, <code>test-compile</code>, and a generated suite, <code>target/requirement-suite.xml</code>, holding only the changed classes with the usual listeners and no retries.</li>
+            <li><strong>Heal.</strong><br>On failure, the healer agent classifies the cause and fixes test defects only. Up to three attempts.</li>
+            <li><strong>Stability.</strong><br>Runs the passing suite two more times; intermittent failures go back to healing.</li>
+            <li><strong>Approve.</strong><br>Shows coverage, the diff, run results, and suspected app defects, then asks you to approve, request changes, or reject.</li>
+          </ol>
+          <p>
+            Verification uses <code>-Dsuite</code>, not <code>-Dtest</code>: <code>-Dtest</code> bypasses the suite file, so
+            the listeners that start the app, filter groups, and handle <code>@KnownDefect</code> would not run.
+          </p>
+
+          <h3>Who does what</h3>
+          <table>
+            <thead><tr><th>Part</th><th>Responsibility</th></tr></thead>
+            <tbody>
+              <tr><td><a href="../.claude/skills/requirement-to-test/SKILL.md"><code>.claude/skills/requirement-to-test/SKILL.md</code></a></td><td>The orchestrator: phases, the heal limit, the checks on each agent's work, and the approval step.</td></tr>
+              <tr><td><a href="../.claude/agents/selenium-test-writer.md"><code>.claude/agents/selenium-test-writer.md</code></a></td><td>Explores the app with the Selenium MCP browser and writes tests to the plan.</td></tr>
+              <tr><td><a href="../.claude/agents/selenium-test-healer.md"><code>.claude/agents/selenium-test-healer.md</code></a></td><td>Diagnoses a failing test and fixes it only when the test, not the app, is at fault.</td></tr>
+              <tr><td><a href="test-writing-standards.md"><code>docs/test-writing-standards.md</code></a></td><td>The rules both agents read before writing or changing a test.</td></tr>
+              <tr><td><a href="../requirement/"><code>requirement/*.md</code></a></td><td>The input: requirements with numbered acceptance criteria.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>Healing rules</h3>
+          <p>The healer sorts each failure into one of three kinds and acts only on the first:</p>
+          <table>
+            <thead><tr><th>Classification</th><th>Examples</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>Test defect</td><td>Wrong locator, a read that doesn't wait through <code>expect()</code>, data collision between parallel tests, compile or Spotless error.</td><td>Fixed, following the writing standards.</td></tr>
+              <tr><td>Application defect</td><td>The app does not behave as an acceptance criterion says.</td><td>No change; reported with expected and actual behaviour.</td></tr>
+              <tr><td>Environment problem</td><td>App not running, missing credentials, port in use, missing browser or mismatched driver.</td><td>No change; reported.</td></tr>
+            </tbody>
+          </table>
+          <div class="notice">
+            <strong>A test is never forced to pass.</strong> The healer may not loosen or delete an assertion that
+            encodes an acceptance criterion, disable or skip the test, add <code>@KnownDefect</code>, add
+            <code>Thread.sleep</code> or JavaScript clicks, raise timeouts as a fix, swallow exceptions, or edit
+            <code>app/</code>, <code>pom.xml</code>, <code>testng.xml</code>, or the framework support code. The
+            orchestrator reads the diff after every heal and reverts any weakened assertion.
+          </div>
+
+          <h3>Approval</h3>
+          <table>
+            <thead><tr><th>Choice</th><th>What happens</th></tr></thead>
+            <tbody>
+              <tr><td>Approve and commit</td><td>Commits on <code>tests/&lt;id&gt;</code> with the message <code>test: cover &lt;ID&gt; - &lt;title&gt;</code>. Nothing is pushed.</td></tr>
+              <tr><td>Request changes</td><td>Your notes go back to the writer, then the run repeats from verification.</td></tr>
+              <tr><td>Reject and discard</td><td>Lists and removes the run's changes, switches back to your original branch, and deletes the test branch.</td></tr>
+            </tbody>
+          </table>
+          <p>
+            The orchestrator never edits requirement files; if a requirement is unclear or wrong, it says so in the
+            report.
+          </p>
         </section>
 
         <section id="ci">
